@@ -153,20 +153,24 @@
 				}
 				toast.success('Password changed successfully');
 			} else {
-				const res = await authClient.updateUser({
-					fetchOptions: {
-						body: {
-							password: passwordData.newPassword
-						}
-					}
+				// Use server action for setPassword (security requirement)
+				const formData = new FormData();
+				formData.append('newPassword', passwordData.newPassword);
+
+				const response = await fetch('?/setPassword', {
+					method: 'POST',
+					body: formData
 				});
 
-				if (res.error) {
-					toast.error(res.error.message || 'Failed to set password');
-					return;
+				const result = await response.json();
+
+				if (result.type === 'failure' || result.type === 'error') {
+					throw new Error(result.data?.error || 'Failed to set password');
 				}
+
 				toast.success('Password set successfully');
 				hasPassword = true;
+				await invalidateAll();
 			}
 
 			// Clear form
