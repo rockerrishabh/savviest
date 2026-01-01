@@ -60,6 +60,7 @@
 	// Account status
 	let hasPassword = $state(false);
 	let isLoadingAccount = $state(true);
+	let linkedAccountsComponent: any;
 
 	$effect(() => {
 		const checkPasswordStatus = async () => {
@@ -171,6 +172,9 @@
 				toast.success('Password set successfully');
 				hasPassword = true;
 				await invalidateAll();
+				if (linkedAccountsComponent) {
+					linkedAccountsComponent.refresh();
+				}
 			}
 
 			// Clear form
@@ -526,7 +530,7 @@
 							<Card.Description>Connect multiple sign-in methods to your account.</Card.Description>
 						</Card.Header>
 						<Card.Content>
-							<LinkedAccounts />
+							<LinkedAccounts bind:this={linkedAccountsComponent} />
 						</Card.Content>
 					</Card.Root>
 

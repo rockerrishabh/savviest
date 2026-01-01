@@ -51,6 +51,10 @@
 		fetchLinkedAccounts();
 	});
 
+	export const refresh = async () => {
+		await fetchLinkedAccounts();
+	};
+
 	const fetchLinkedAccounts = async () => {
 		isLoading = true;
 		try {

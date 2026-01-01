@@ -46,6 +46,12 @@ export const auth = betterAuth({
 			});
 		}
 	},
+	account: {
+		accountLinking: {
+			enabled: true,
+			trustedProviders: ['google', 'github']
+		}
+	},
 	socialProviders: {
 		google: {
 			clientId: validatedEnv.GOOGLE_CLIENT_ID,
