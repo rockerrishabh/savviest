@@ -1,5 +1,4 @@
 <script lang="ts">
-	import * as Card from '$lib/components/ui/card';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { authClient } from '$lib/auth-client';
