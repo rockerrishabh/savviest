@@ -57,8 +57,6 @@
 		reducedMotion: false
 	});
 
-
-
 	// Account status
 	let hasPassword = $state(false);
 	let isLoadingAccount = $state(true);
@@ -155,9 +153,12 @@
 				}
 				toast.success('Password changed successfully');
 			} else {
-				const res = await authClient.setPassword({
-					newPassword: passwordData.newPassword,
-					revokeOtherSessions: true
+				const res = await authClient.updateUser({
+					fetchOptions: {
+						body: {
+							password: passwordData.newPassword
+						}
+					}
 				});
 
 				if (res.error) {
@@ -478,7 +479,6 @@
 									</Button>
 								</div>
 							{/if}
-							</div>
 						</Card.Content>
 					</Card.Root>
 
