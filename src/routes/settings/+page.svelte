@@ -57,11 +57,7 @@
 		reducedMotion: false
 	});
 
-	let appearanceSettings = $state({
-		theme: 'system' as 'light' | 'dark' | 'system',
-		compactMode: false,
-		reducedMotion: false
-	});
+
 
 	// Account status
 	let hasPassword = $state(false);
