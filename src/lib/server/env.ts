@@ -9,11 +9,11 @@ const envSchema = z.object({
 	GOOGLE_CLIENT_SECRET: z.string().min(1),
 	SMTP_HOST: z.string().min(1),
 	SMTP_PORT: z.coerce.number(),
-	SMTP_EMAIL_VERIFICATION_MAIL: z.string(),
-	SMTP_OTP_VERIFICATION_MAIL: z.string(),
-	SMTP_WELCOME_MAIL: z.string(),
-	SMTP_SUPPORT_MAIL: z.string(),
-	SMTP_PASSWORD_RESET_MAIL: z.string(),
+	SMTP_EMAIL_VERIFICATION_MAIL: z.email(),
+	SMTP_OTP_VERIFICATION_MAIL: z.email(),
+	SMTP_WELCOME_MAIL: z.email(),
+	SMTP_SUPPORT_MAIL: z.email(),
+	SMTP_PASSWORD_RESET_MAIL: z.email(),
 	SMTP_PASSWORD: z.string().min(1)
 });
 
