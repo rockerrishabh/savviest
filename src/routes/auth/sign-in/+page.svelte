@@ -82,6 +82,18 @@
 		// Run both initializations
 		initOneTap();
 		initConditionalUI();
+
+		return () => {
+			try {
+				// @ts-ignore
+				if (typeof google !== 'undefined' && google?.accounts?.id) {
+					// @ts-ignore
+					google.accounts.id.cancel();
+				}
+			} catch (e) {
+				// ignore
+			}
+		};
 	});
 
 	const handleSubmit = async (e: Event) => {
