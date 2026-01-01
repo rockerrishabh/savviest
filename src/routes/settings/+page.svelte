@@ -57,7 +57,31 @@
 		reducedMotion: false
 	});
 
-	// Password change state
+	let appearanceSettings = $state({
+		theme: 'system' as 'light' | 'dark' | 'system',
+		compactMode: false,
+		reducedMotion: false
+	});
+
+	// Account status
+	let hasPassword = $state(false);
+	let isLoadingAccount = $state(true);
+
+	$effect(() => {
+		const checkPasswordStatus = async () => {
+			try {
+				const accounts = await authClient.listAccounts();
+				if (accounts.data) {
+					hasPassword = accounts.data.some((a) => a.providerId === 'credential');
+				}
+			} catch (e) {
+				console.error('Failed to check account status', e);
+			} finally {
+				isLoadingAccount = false;
+			}
+		};
+		checkPasswordStatus();
+	});
 	let passwordData = $state({
 		currentPassword: '',
 		newPassword: '',
@@ -100,12 +124,13 @@
 	};
 
 	const handleChangePassword = async () => {
-		if (
-			!passwordData.currentPassword ||
-			!passwordData.newPassword ||
-			!passwordData.confirmPassword
-		) {
-			toast.error('Please fill in all password fields');
+		if (hasPassword && !passwordData.currentPassword) {
+			toast.error('Please enter your current password');
+			return;
+		}
+
+		if (!passwordData.newPassword || !passwordData.confirmPassword) {
+			toast.error('Please enter a new password');
 			return;
 		}
 
@@ -121,15 +146,40 @@
 
 		isChangingPassword = true;
 		try {
-			await authClient.changePassword({
-				currentPassword: passwordData.currentPassword,
-				newPassword: passwordData.newPassword,
-				revokeOtherSessions: true
-			});
-			toast.success('Password changed successfully');
-			passwordData = { currentPassword: '', newPassword: '', confirmPassword: '' };
+			if (hasPassword) {
+				const res = await authClient.changePassword({
+					newPassword: passwordData.newPassword,
+					currentPassword: passwordData.currentPassword,
+					revokeOtherSessions: true
+				});
+
+				if (res.error) {
+					toast.error(res.error.message || 'Failed to change password');
+					return;
+				}
+				toast.success('Password changed successfully');
+			} else {
+				const res = await authClient.setPassword({
+					newPassword: passwordData.newPassword,
+					revokeOtherSessions: true
+				});
+
+				if (res.error) {
+					toast.error(res.error.message || 'Failed to set password');
+					return;
+				}
+				toast.success('Password set successfully');
+				hasPassword = true;
+			}
+
+			// Clear form
+			passwordData = {
+				currentPassword: '',
+				newPassword: '',
+				confirmPassword: ''
+			};
 		} catch (error) {
-			toast.error('Failed to change password. Please check your current password.');
+			toast.error(hasPassword ? 'Failed to change password' : 'Failed to set password');
 		} finally {
 			isChangingPassword = false;
 		}
@@ -364,56 +414,74 @@
 			<!-- Security Tab -->
 			<Tabs.Content value="security">
 				<div class="space-y-6">
-					<!-- Password Change -->
+					<!-- Password Change/Set -->
 					<Card.Root class="border-border/50 bg-card/50 backdrop-blur-sm">
 						<Card.Header>
 							<Card.Title class="flex items-center gap-2">
 								<Key class="h-5 w-5 text-primary" />
-								Change Password
+								{hasPassword ? 'Change Password' : 'Set Password'}
 							</Card.Title>
-							<Card.Description>Update your password to keep your account secure.</Card.Description>
+							<Card.Description>
+								{hasPassword
+									? 'Update your password to keep your account secure.'
+									: 'Set a password to login with email and password.'}
+							</Card.Description>
 						</Card.Header>
 						<Card.Content class="space-y-4">
-							<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-								<div class="space-y-2">
-									<Label for="currentPassword">Current Password</Label>
-									<Input
-										id="currentPassword"
-										type="password"
-										bind:value={passwordData.currentPassword}
-										placeholder="Enter current password"
-									/>
+							{#if isLoadingAccount}
+								<div class="flex justify-center py-8">
+									<Loader2 class="h-6 w-6 animate-spin text-muted-foreground" />
 								</div>
-								<div class="space-y-2">
-									<Label for="newPassword">New Password</Label>
-									<Input
-										id="newPassword"
-										type="password"
-										bind:value={passwordData.newPassword}
-										placeholder="Enter new password"
-									/>
-								</div>
-								<div class="space-y-2">
-									<Label for="confirmPassword">Confirm New Password</Label>
-									<Input
-										id="confirmPassword"
-										type="password"
-										bind:value={passwordData.confirmPassword}
-										placeholder="Confirm new password"
-									/>
-								</div>
-							</div>
-
-							<div class="flex justify-end pt-2">
-								<Button onclick={handleChangePassword} disabled={isChangingPassword}>
-									{#if isChangingPassword}
-										<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-										Changing...
-									{:else}
-										<Lock class="mr-2 h-4 w-4" />
-										Change Password
+							{:else}
+								<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+									{#if hasPassword}
+										<div class="space-y-2">
+											<Label for="currentPassword">Current Password</Label>
+											<Input
+												id="currentPassword"
+												type="password"
+												bind:value={passwordData.currentPassword}
+												placeholder="Enter current password"
+											/>
+										</div>
 									{/if}
-								</Button>
+									<div class="space-y-2">
+										<Label for="newPassword">New Password</Label>
+										<Input
+											id="newPassword"
+											type="password"
+											bind:value={passwordData.newPassword}
+											placeholder="Enter new password"
+										/>
+									</div>
+									<div class="space-y-2">
+										<Label for="confirmPassword">Confirm New Password</Label>
+										<Input
+											id="confirmPassword"
+											type="password"
+											bind:value={passwordData.confirmPassword}
+											placeholder="Confirm new password"
+										/>
+									</div>
+								</div>
+
+								<div class="flex justify-end pt-2">
+									<Button
+										onclick={handleChangePassword}
+										disabled={isChangingPassword ||
+											(hasPassword && !passwordData.currentPassword) ||
+											!passwordData.newPassword}
+									>
+										{#if isChangingPassword}
+											<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+											{hasPassword ? 'Changing...' : 'Setting...'}
+										{:else}
+											<Lock class="mr-2 h-4 w-4" />
+											{hasPassword ? 'Change Password' : 'Set Password'}
+										{/if}
+									</Button>
+								</div>
+							{/if}
 							</div>
 						</Card.Content>
 					</Card.Root>
