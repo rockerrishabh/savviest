@@ -1,58 +1,12 @@
 <script lang="ts">
-	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
-	import { authClient } from '$lib/auth-client';
-	import { toast } from 'svelte-sonner';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
-	import Loader2 from '@lucide/svelte/icons/loader-2';
 	import CheckCircle from '@lucide/svelte/icons/check-circle';
 	import XCircle from '@lucide/svelte/icons/x-circle';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 
-	let status = $state<'loading' | 'success' | 'error'>('loading');
-	let errorMessage = $state('');
-
-	const token = $derived(page.url.searchParams.get('token'));
-
-	$effect(() => {
-		if (!token) {
-			status = 'error';
-			errorMessage = 'Invalid verification link. No token provided.';
-			return;
-		}
-
-		verifyEmail(token);
-	});
-
-	async function verifyEmail(token: string) {
-		try {
-			await authClient.verifyEmail(
-				{
-					query: {
-						token
-					}
-				},
-				{
-					onSuccess: () => {
-						status = 'success';
-						toast.success('Email verified successfully!');
-						setTimeout(() => {
-							goto('/auth/sign-in');
-						}, 3000);
-					},
-					onError: (err) => {
-						status = 'error';
-						errorMessage =
-							err.error.message || 'Failed to verify email. The link may have expired.';
-					}
-				}
-			);
-		} catch (err) {
-			status = 'error';
-			errorMessage = 'An unexpected error occurred. Please try again.';
-		}
-	}
+	let { data } = $props();
+	// data.status is 'success' or 'error'
 </script>
 
 <svelte:head>
@@ -85,19 +39,7 @@
 
 		<Card.Root class="border-border/50 bg-card/80 shadow-xl shadow-black/5 backdrop-blur-xl">
 			<Card.Content class="p-8">
-				{#if status === 'loading'}
-					<div class="flex flex-col items-center justify-center space-y-4 py-8">
-						<div class="rounded-full bg-primary/10 p-4">
-							<Loader2 class="h-12 w-12 animate-spin text-primary" />
-						</div>
-						<div class="text-center">
-							<h2 class="text-xl font-semibold text-foreground">Verifying your email...</h2>
-							<p class="mt-2 text-muted-foreground">
-								Please wait while we verify your email address.
-							</p>
-						</div>
-					</div>
-				{:else if status === 'success'}
+				{#if data.status === 'success'}
 					<div class="flex flex-col items-center justify-center space-y-4 py-8">
 						<div class="rounded-full bg-emerald-500/10 p-4">
 							<CheckCircle class="h-12 w-12 text-emerald-500" />
@@ -105,8 +47,7 @@
 						<div class="text-center">
 							<h2 class="text-xl font-semibold text-foreground">Email Verified!</h2>
 							<p class="mt-2 text-muted-foreground">
-								Your email has been successfully verified. You will be redirected to sign in
-								shortly.
+								Your email has been successfully verified. You can now sign in.
 							</p>
 						</div>
 						<Button href="/auth/sign-in" class="mt-4">Continue to Sign In</Button>
@@ -118,7 +59,7 @@
 						</div>
 						<div class="text-center">
 							<h2 class="text-xl font-semibold text-foreground">Verification Failed</h2>
-							<p class="mt-2 text-muted-foreground">{errorMessage}</p>
+							<p class="mt-2 text-muted-foreground">{data.message}</p>
 						</div>
 						<div class="mt-4 flex gap-3">
 							<Button variant="outline" href="/">Go Home</Button>

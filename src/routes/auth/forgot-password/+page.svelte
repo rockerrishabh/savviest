@@ -1,56 +1,15 @@
 <script lang="ts">
-	import { authClient } from '$lib/auth-client';
-	import { forgotPasswordSchema, formatZodErrors } from '$lib/validations/auth';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import * as Card from '$lib/components/ui/card';
 	import Mail from '@lucide/svelte/icons/mail';
-	import Loader2 from '@lucide/svelte/icons/loader-2';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import CheckCircle from '@lucide/svelte/icons/check-circle';
-	import { toast } from 'svelte-sonner';
 
-	let email = $state('');
-	let isLoading = $state(false);
-	let isSubmitted = $state(false);
-	let errors = $state<Record<string, string>>({});
-	let generalError = $state('');
-
-	const handleSubmit = async (e: Event) => {
-		e.preventDefault();
-		errors = {};
-		generalError = '';
-
-		// Validate with Zod
-		const result = forgotPasswordSchema.safeParse({ email });
-		if (!result.success) {
-			errors = formatZodErrors(result.error);
-			return;
-		}
-
-		isLoading = true;
-
-		try {
-			const { error } = await authClient.requestPasswordReset({
-				email,
-				redirectTo: '/auth/reset-password'
-			});
-
-			if (error) {
-				generalError = error.message || 'Failed to send reset link';
-			} else {
-				isSubmitted = true;
-				toast.success('Reset link sent!');
-			}
-		} catch (err) {
-			generalError = 'An unexpected error occurred. Please try again.';
-		} finally {
-			isLoading = false;
-		}
-	};
+	let { form } = $props();
 </script>
 
 <svelte:head>
@@ -80,7 +39,7 @@
 		</div>
 
 		<Card.Root class="border-border/50 bg-card/80 shadow-xl shadow-black/5 backdrop-blur-xl">
-			{#if isSubmitted}
+			{#if form?.success}
 				<Card.Content class="pt-6">
 					<div class="flex flex-col items-center justify-center space-y-4 py-8 text-center">
 						<div class="rounded-full bg-emerald-500/10 p-4">
@@ -90,7 +49,7 @@
 							<h3 class="text-xl font-semibold">Check your email</h3>
 							<p class="text-muted-foreground">
 								We have sent a password reset link to <br />
-								<span class="font-medium text-foreground">{email}</span>
+								<span class="font-medium text-foreground">{form.email}</span>
 							</p>
 						</div>
 						<div class="pt-4">
@@ -109,12 +68,12 @@
 					>
 				</Card.Header>
 				<Card.Content>
-					<form onsubmit={handleSubmit} class="space-y-4">
-						{#if generalError}
+					<form method="POST" class="space-y-4">
+						{#if form?.generalError}
 							<div
 								class="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
 							>
-								{generalError}
+								{form.generalError}
 							</div>
 						{/if}
 
@@ -126,27 +85,22 @@
 								/>
 								<Input
 									id="email"
+									name="email"
 									type="email"
 									placeholder="name@example.com"
 									class="pl-10"
-									bind:value={email}
-									disabled={isLoading}
-									aria-invalid={!!errors.email}
+									value={form?.fields?.email ?? ''}
+									aria-invalid={!!form?.errors?.email}
 								/>
 							</div>
-							{#if errors.email}
-								<p class="text-sm text-destructive">{errors.email}</p>
+							{#if form?.errors?.email}
+								<p class="text-sm text-destructive">{form.errors.email}</p>
 							{/if}
 						</div>
 
-						<Button type="submit" class="w-full" disabled={isLoading}>
-							{#if isLoading}
-								<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-								Sending link...
-							{:else}
-								Send Reset Link
-								<ArrowRight class="ml-2 h-4 w-4" />
-							{/if}
+						<Button type="submit" class="w-full">
+							Send Reset Link
+							<ArrowRight class="ml-2 h-4 w-4" />
 						</Button>
 					</form>
 				</Card.Content>

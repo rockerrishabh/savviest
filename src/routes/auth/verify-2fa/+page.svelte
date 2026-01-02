@@ -1,7 +1,4 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
-	import { page } from '$app/state';
-	import { authClient } from '$lib/auth-client';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -11,90 +8,13 @@
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import Shield from '@lucide/svelte/icons/shield';
 	import KeyRound from '@lucide/svelte/icons/key-round';
-	import Loader2 from '@lucide/svelte/icons/loader-2';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import Smartphone from '@lucide/svelte/icons/smartphone';
 	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
-	import { toast } from 'svelte-sonner';
 
-	let totpCode = $state('');
-	let backupCode = $state('');
-	let isLoading = $state(false);
-	let error = $state('');
-	let trustDevice = $state(false);
-	let useBackupCode = $state(false);
-
-	// Get redirect URL from query params
-	const redirectUrl = $derived(page.url.searchParams.get('redirect') ?? '/dashboard');
-
-	// Focus the input on mount using $effect
-	$effect(() => {
-		// Only focus when not in backup code mode
-		if (!useBackupCode) {
-			const input = document.getElementById('totp-code');
-			input?.focus();
-		}
-	});
-
-	const handleVerifyTotp = async (e: Event) => {
-		e.preventDefault();
-		error = '';
-
-		const code = useBackupCode ? backupCode : totpCode;
-
-		if (!code) {
-			error = 'Please enter a verification code';
-			return;
-		}
-
-		if (!useBackupCode && code.length !== 6) {
-			error = 'Please enter a valid 6-digit code';
-			return;
-		}
-
-		isLoading = true;
-
-		try {
-			if (useBackupCode) {
-				// Verify using backup code
-				const result = await authClient.twoFactor.verifyBackupCode({
-					code: backupCode
-				});
-
-				if (result.error) {
-					error = result.error.message || 'Invalid backup code';
-					return;
-				}
-			} else {
-				// Verify using TOTP
-				const result = await authClient.twoFactor.verifyTotp({
-					code: totpCode,
-					trustDevice
-				});
-
-				if (result.error) {
-					error = result.error.message || 'Invalid verification code';
-					return;
-				}
-			}
-
-			await invalidateAll(); // Refresh user data from server
-			toast.success('Verification successful!');
-			goto(redirectUrl);
-		} catch (err) {
-			error = 'Verification failed. Please try again.';
-		} finally {
-			isLoading = false;
-		}
-	};
-
-	// Handle input for TOTP code - only allow numbers
-	const handleTotpInput = (e: Event) => {
-		const target = e.target as HTMLInputElement;
-		target.value = target.value.replace(/\D/g, '').slice(0, 6);
-		totpCode = target.value;
-	};
+	let { data, form } = $props();
+	// data.method is 'totp' or 'backup'
 </script>
 
 <svelte:head>
@@ -135,7 +55,7 @@
 					<div>
 						<Card.Title class="text-xl">Verify your identity</Card.Title>
 						<Card.Description>
-							{useBackupCode
+							{data.method === 'backup'
 								? 'Enter one of your backup codes'
 								: 'Enter the code from your authenticator app'}
 						</Card.Description>
@@ -144,31 +64,31 @@
 			</Card.Header>
 
 			<Card.Content>
-				<form onsubmit={handleVerifyTotp} class="space-y-4">
-					{#if error}
+				<form method="POST" class="space-y-4">
+					{#if form?.error}
 						<div
 							class="flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
 						>
 							<AlertTriangle class="mt-0.5 h-4 w-4 shrink-0" />
-							<span>{error}</span>
+							<span>{form.error}</span>
 						</div>
 					{/if}
 
-					{#if useBackupCode}
+					{#if data.method === 'backup'}
 						<!-- Backup Code Input -->
 						<div class="space-y-2">
-							<Label for="backup-code">Backup Code</Label>
+							<Label for="backupCode">Backup Code</Label>
 							<div class="relative">
 								<KeyRound
 									class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground"
 								/>
 								<Input
-									id="backup-code"
+									id="backupCode"
+									name="backupCode"
 									type="text"
 									placeholder="Enter backup code"
 									class="pl-10 font-mono"
-									bind:value={backupCode}
-									disabled={isLoading}
+									value={form ? (form as any).backupCode : ''}
 								/>
 							</div>
 							<p class="text-xs text-muted-foreground">
@@ -178,21 +98,20 @@
 					{:else}
 						<!-- TOTP Code Input -->
 						<div class="space-y-2">
-							<Label for="totp-code">Authentication Code</Label>
+							<Label for="code">Authentication Code</Label>
 							<div class="relative">
 								<Smartphone
 									class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground"
 								/>
 								<Input
-									id="totp-code"
+									id="code"
+									name="code"
 									type="text"
 									inputmode="numeric"
 									placeholder="000000"
 									class="pl-10 text-center font-mono text-xl tracking-[0.3em]"
 									maxlength={6}
-									oninput={handleTotpInput}
-									value={totpCode}
-									disabled={isLoading}
+									value={form ? (form as any).code : ''}
 								/>
 							</div>
 							<p class="text-xs text-muted-foreground">
@@ -202,9 +121,14 @@
 
 						<!-- Trust Device -->
 						<div class="flex items-center space-x-2">
-							<Checkbox id="trust-device" bind:checked={trustDevice} />
+							<input
+								type="checkbox"
+								id="trustDevice"
+								name="trustDevice"
+								class="h-4 w-4 shrink-0 rounded-[4px] border border-input shadow-xs transition-shadow outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+							/>
 							<Label
-								for="trust-device"
+								for="trustDevice"
 								class="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
 							>
 								Trust this device for 30 days
@@ -212,14 +136,9 @@
 						</div>
 					{/if}
 
-					<Button type="submit" class="w-full" disabled={isLoading}>
-						{#if isLoading}
-							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-							Verifying...
-						{:else}
-							Verify
-							<ArrowRight class="ml-2 h-4 w-4" />
-						{/if}
+					<Button type="submit" class="w-full">
+						Verify
+						<ArrowRight class="ml-2 h-4 w-4" />
 					</Button>
 				</form>
 
@@ -232,19 +151,14 @@
 					</span>
 				</div>
 
-				<!-- Toggle between TOTP and Backup Code -->
+				<!-- Toggle between TOTP and Backup Code using Links -->
 				<Button
 					variant="outline"
 					class="w-full"
-					onclick={() => {
-						useBackupCode = !useBackupCode;
-						error = '';
-						totpCode = '';
-						backupCode = '';
-					}}
+					href={data.method === 'backup' ? '?method=totp' : '?method=backup'}
 				>
 					<KeyRound class="mr-2 h-4 w-4" />
-					{useBackupCode ? 'Use authenticator app instead' : 'Use a backup code instead'}
+					{data.method === 'backup' ? 'Use authenticator app instead' : 'Use a backup code instead'}
 				</Button>
 			</Card.Content>
 

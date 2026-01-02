@@ -1,8 +1,6 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { Separator } from '$lib/components/ui/separator';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
@@ -18,36 +16,15 @@
 	import Shield from '@lucide/svelte/icons/shield';
 	import Bell from '@lucide/svelte/icons/bell';
 	import Search from '@lucide/svelte/icons/search';
-	import { SidebarTrigger } from '$lib/components/ui/sidebar';
 	import { isAdmin } from '$lib/types/roles';
-	import { authClient } from '$lib/auth-client';
-	import { toast } from 'svelte-sonner';
-	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
 
-	// Use server-side user data from page store (no loading delay)
+	// Use server-side user data from page store
 	let user = $derived(page.data.user);
-
-	let mobileMenuOpen = $state(false);
 
 	const navLinks = [
 		{ label: 'Home', href: '/', icon: Home },
 		{ label: 'Dashboard', href: '/dashboard', icon: BarChart3, auth: true }
 	];
-
-	const handleSignOut = async () => {
-		await authClient.signOut({
-			fetchOptions: {
-				onError: () => {
-					toast.error('Failed to sign out');
-				},
-				onSuccess: async () => {
-					toast.success('You have been signed out');
-					await invalidateAll();
-					goto('/auth/sign-in');
-				}
-			}
-		});
-	};
 
 	const getInitials = (name: string) => {
 		return name
@@ -82,24 +59,21 @@
 			<!-- Left side -->
 			<div class="flex items-center gap-2 px-4">
 				{#if isDashboardPaths}
-					<SidebarTrigger class="-ml-1" />
-					<Separator orientation="vertical" class="mr-2 h-4" />
-					<Breadcrumb.Root class="hidden items-center sm:flex">
-						<Breadcrumb.List>
+					<!-- Breadcrumbs -->
+					<div class="ml-2 hidden items-center gap-2 sm:flex">
+						<div class="flex items-center text-sm text-muted-foreground">
 							{#each breadcrumbs as crumb, i}
-								<Breadcrumb.Item>
-									{#if crumb.isLast}
-										<Breadcrumb.Page>{crumb.label}</Breadcrumb.Page>
-									{:else}
-										<Breadcrumb.Link href={crumb.href}>{crumb.label}</Breadcrumb.Link>
-									{/if}
-								</Breadcrumb.Item>
-								{#if !crumb.isLast}
-									<Breadcrumb.Separator />
+								{#if i > 0}
+									<span class="mx-2">/</span>
+								{/if}
+								{#if crumb.isLast}
+									<span class="font-medium text-foreground">{crumb.label}</span>
+								{:else}
+									<a href={crumb.href} class="hover:text-foreground">{crumb.label}</a>
 								{/if}
 							{/each}
-						</Breadcrumb.List>
-					</Breadcrumb.Root>
+						</div>
+					</div>
 				{:else}
 					<!-- Logo -->
 					<a href="/" class="flex items-center gap-2 transition-opacity hover:opacity-80">
@@ -130,95 +104,89 @@
 
 			<!-- Right side -->
 			<div class="flex items-center gap-3">
-				<!-- Search (More prominent on dashboard, or always available) -->
+				<!-- Search -->
 				<div class="relative hidden sm:block">
 					<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 					<input
 						type="search"
+						name="q"
 						placeholder="Search..."
 						class="h-9 w-48 rounded-lg border border-border/50 bg-muted/30 py-2 pr-4 pl-10 text-sm transition-colors outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary lg:w-64"
 					/>
 				</div>
-				<Button variant="ghost" size="icon" class="sm:hidden">
-					<Search class="h-5 w-5" />
-				</Button>
-
-				{#if user}
-					<!-- Notifications -->
-					<Button variant="ghost" size="icon" class="relative">
-						<Bell class="h-5 w-5" />
-						<span
-							class="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary ring-2 ring-background"
-						></span>
-					</Button>
-				{/if}
 
 				<ThemeToggle />
 
 				{#if user}
-					<!-- User Menu -->
-					<DropdownMenu.Root>
-						<DropdownMenu.Trigger>
-							{#snippet child({ props })}
-								<button
-									{...props}
-									class="flex items-center gap-2 rounded-full p-1 transition-colors hover:bg-accent focus:ring-1 focus:ring-ring focus:ring-offset-1 focus:outline-none"
+					<!-- User Menu (CSS Dropdown) -->
+					<div class="group relative z-50">
+						<button
+							class="flex items-center gap-2 rounded-full p-1 transition-colors hover:bg-accent focus:outline-none"
+						>
+							<Avatar.Root class="h-8 w-8">
+								{#if user.image}
+									<Avatar.Image src={user.image} alt={user.name} />
+								{/if}
+								<Avatar.Fallback
+									class="bg-linear-to-br from-primary to-chart-2 text-xs font-medium text-primary-foreground"
 								>
-									<Avatar.Root class="h-8 w-8">
-										{#if user.image}
-											<Avatar.Image src={user.image} alt={user.name} />
-										{/if}
-										<Avatar.Fallback
-											class="bg-linear-to-br from-primary to-chart-2 text-xs font-medium text-primary-foreground"
-										>
-											{getInitials(user.name)}
-										</Avatar.Fallback>
-									</Avatar.Root>
-									<ChevronDown class="hidden h-4 w-4 text-muted-foreground sm:block" />
-								</button>
-							{/snippet}
-						</DropdownMenu.Trigger>
-						<DropdownMenu.Content align="end" class="w-56">
+									{getInitials(user.name)}
+								</Avatar.Fallback>
+							</Avatar.Root>
+							<ChevronDown class="hidden h-4 w-4 text-muted-foreground sm:block" />
+						</button>
+
+						<!-- Dropdown Content -->
+						<div
+							class="absolute top-full right-0 mt-2 hidden w-56 rounded-md border border-border bg-popover text-popover-foreground shadow-md outline-none group-hover:block focus-within:block"
+						>
 							<div class="px-2 py-1.5">
 								<p class="text-sm font-medium text-foreground">{user.name}</p>
 								<p class="text-xs text-muted-foreground">{user.email}</p>
 							</div>
-							<DropdownMenu.Separator />
+							<Separator class="my-1" />
 							{#if isAdmin(user?.role)}
-								<DropdownMenu.Item>
-									<a href="/admin" class="flex items-center gap-2 text-amber-500">
-										<Shield class="mr-2 h-4 w-4" />
-										<span>Admin Panel</span>
-									</a>
-								</DropdownMenu.Item>
+								<a
+									href="/admin"
+									class="relative flex cursor-default items-center rounded-sm px-2 py-1.5 text-sm text-amber-500 transition-colors outline-none select-none hover:bg-accent hover:text-accent-foreground"
+								>
+									<Shield class="mr-2 h-4 w-4" />
+									<span>Admin Panel</span>
+								</a>
 							{/if}
-							<DropdownMenu.Item>
-								<a href="/dashboard" class="flex items-center gap-2 text-primary">
-									<BarChart3 class="mr-2 h-4 w-4" />
-									<span>Dashboard</span>
-								</a>
-							</DropdownMenu.Item>
-							<DropdownMenu.Item>
-								<a href="/profile" class="flex items-center gap-2 text-primary">
-									<UserIcon class="mr-2 h-4 w-4" />
-									<span>Profile</span>
-								</a>
-							</DropdownMenu.Item>
-							<DropdownMenu.Item>
-								<a href="/settings" class="flex items-center gap-2 text-primary">
-									<Settings class="mr-2 h-4 w-4" />
-									<span>Settings</span>
-								</a>
-							</DropdownMenu.Item>
-							<DropdownMenu.Separator />
-							<DropdownMenu.Item class="text-destructive">
-								<button onclick={handleSignOut} class="flex items-center gap-2">
+							<a
+								href="/dashboard"
+								class="relative flex cursor-default items-center rounded-sm px-2 py-1.5 text-sm text-primary transition-colors outline-none select-none hover:bg-accent hover:text-accent-foreground"
+							>
+								<BarChart3 class="mr-2 h-4 w-4" />
+								<span>Dashboard</span>
+							</a>
+							<a
+								href="/profile"
+								class="relative flex cursor-default items-center rounded-sm px-2 py-1.5 text-sm text-primary transition-colors outline-none select-none hover:bg-accent hover:text-accent-foreground"
+							>
+								<UserIcon class="mr-2 h-4 w-4" />
+								<span>Profile</span>
+							</a>
+							<a
+								href="/settings"
+								class="relative flex cursor-default items-center rounded-sm px-2 py-1.5 text-sm text-primary transition-colors outline-none select-none hover:bg-accent hover:text-accent-foreground"
+							>
+								<Settings class="mr-2 h-4 w-4" />
+								<span>Settings</span>
+							</a>
+							<Separator class="my-1" />
+							<form action="/auth/sign-out" method="POST" class="w-full">
+								<button
+									type="submit"
+									class="relative flex w-full cursor-default items-center rounded-sm px-2 py-1.5 text-sm text-destructive transition-colors outline-none select-none hover:bg-accent hover:text-accent-foreground"
+								>
 									<LogOut class="mr-2 h-4 w-4" />
 									<span>Sign out</span>
 								</button>
-							</DropdownMenu.Item>
-						</DropdownMenu.Content>
-					</DropdownMenu.Root>
+							</form>
+						</div>
+					</div>
 				{:else}
 					<!-- Auth buttons -->
 					<div class="hidden items-center gap-2 sm:flex">
@@ -228,50 +196,41 @@
 				{/if}
 
 				{#if !isDashboardPaths}
-					<!-- Mobile menu button -->
-					<Button
-						variant="ghost"
-						size="icon"
-						class="md:hidden"
-						onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
-						aria-label="Toggle menu"
-					>
-						{#if mobileMenuOpen}
-							<X class="h-5 w-5" />
-						{:else}
-							<Menu class="h-5 w-5" />
-						{/if}
-					</Button>
+					<!-- Mobile menu button (Checkbox Hack) -->
+					<label class="relative z-50 cursor-pointer p-2 md:hidden">
+						<input type="checkbox" class="peer hidden" id="mobile-menu-toggle" />
+						<Menu class="h-5 w-5 peer-checked:hidden" />
+						<X class="hidden h-5 w-5 peer-checked:block" />
+
+						<!-- Mobile Menu Dropdown -->
+						<div
+							class="absolute top-12 right-[-10px] hidden w-[300px] rounded-md border border-border bg-background shadow-lg peer-checked:block sm:right-0"
+						>
+							<div class="space-y-1 px-4 py-4">
+								{#each navLinks as link}
+									{#if !link.auth || user}
+										<a
+											href={link.href}
+											class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+										>
+											<link.icon class="h-5 w-5" />
+											{link.label}
+										</a>
+									{/if}
+								{/each}
+
+								{#if !user}
+									<Separator class="my-3" />
+									<div class="flex flex-col gap-2">
+										<Button variant="outline" href="/auth/sign-in" class="w-full">Sign in</Button>
+										<Button href="/auth/sign-up" class="w-full">Get Started</Button>
+									</div>
+								{/if}
+							</div>
+						</div>
+					</label>
 				{/if}
 			</div>
 		</div>
 	</div>
-
-	<!-- Mobile menu (Only for main site navigation) -->
-	{#if mobileMenuOpen && !isDashboardPaths}
-		<div class="border-t border-border/50 bg-background md:hidden">
-			<div class="space-y-1 px-4 py-4">
-				{#each navLinks as link}
-					{#if !link.auth || user}
-						<a
-							href={link.href}
-							class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-							onclick={() => (mobileMenuOpen = false)}
-						>
-							<link.icon class="h-5 w-5" />
-							{link.label}
-						</a>
-					{/if}
-				{/each}
-
-				{#if !user}
-					<Separator class="my-3" />
-					<div class="flex flex-col gap-2">
-						<Button variant="outline" href="/auth/sign-in" class="w-full">Sign in</Button>
-						<Button href="/auth/sign-up" class="w-full">Get Started</Button>
-					</div>
-				{/if}
-			</div>
-		</div>
-	{/if}
 </header>

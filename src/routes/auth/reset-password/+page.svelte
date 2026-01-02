@@ -1,84 +1,16 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { authClient } from '$lib/auth-client';
-	import { resetPasswordSchema, formatZodErrors } from '$lib/validations/auth';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import * as Card from '$lib/components/ui/card';
 	import Lock from '@lucide/svelte/icons/lock';
-	import Loader2 from '@lucide/svelte/icons/loader-2';
-	import Eye from '@lucide/svelte/icons/eye';
-	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import CheckCircle from '@lucide/svelte/icons/check-circle';
-	import { toast } from 'svelte-sonner';
-	import Check from '@lucide/svelte/icons/check';
-	import X from '@lucide/svelte/icons/x';
-	import { page } from '$app/state';
 
-	let password = $state('');
-	let confirmPassword = $state('');
-	let showPassword = $state(false);
-	let showConfirmPassword = $state(false);
-	let isLoading = $state(false);
-	let isSuccess = $state(false);
-	let errors = $state<Record<string, string>>({});
-	let generalError = $state('');
-
-	$effect(() => {
-		if (!page.url.searchParams.get('token')) {
-			toast.error('Invalid or missing reset token');
-			goto('/');
-		}
-	});
-
-	// Password strength indicators
-	const passwordChecks = $derived({
-		minLength: password.length >= 8,
-		hasLower: /[a-z]/.test(password),
-		hasUpper: /[A-Z]/.test(password),
-		hasNumber: /[0-9]/.test(password)
-	});
-
-	const passwordStrength = $derived(Object.values(passwordChecks).filter(Boolean).length);
-
-	const handleSubmit = async (e: Event) => {
-		e.preventDefault();
-		errors = {};
-		generalError = '';
-
-		// Validate with Zod
-		const result = resetPasswordSchema.safeParse({ password, confirmPassword });
-		if (!result.success) {
-			errors = formatZodErrors(result.error);
-			return;
-		}
-
-		isLoading = true;
-
-		try {
-			const { error } = await authClient.resetPassword({
-				newPassword: password,
-				token: page.url.searchParams.get('token') || ''
-			});
-
-			if (error) {
-				generalError = error.message || 'Failed to reset password';
-			} else {
-				isSuccess = true;
-				toast.success('Password reset successfully!');
-				setTimeout(() => {
-					goto('/auth/sign-in');
-				}, 2000);
-			}
-		} catch (err) {
-			generalError = 'An unexpected error occurred. Please try again.';
-		} finally {
-			isLoading = false;
-		}
-	};
+	let { form, data } = $props();
+	// data.token is available if needed, but the form submits to the current URL which includes searchParams by default?
+	// Actually, form action default is current URL including query params. So ?token=... persists.
 </script>
 
 <svelte:head>
@@ -108,7 +40,7 @@
 		</div>
 
 		<Card.Root class="border-border/50 bg-card/80 shadow-xl shadow-black/5 backdrop-blur-xl">
-			{#if isSuccess}
+			{#if form?.success}
 				<Card.Content class="pt-6">
 					<div class="flex flex-col items-center justify-center space-y-4 py-8 text-center">
 						<div class="rounded-full bg-emerald-500/10 p-4">
@@ -118,7 +50,7 @@
 							<h3 class="text-xl font-semibold">Password Reset Complete</h3>
 							<p class="text-muted-foreground">
 								Your password has been successfully reset. <br />
-								Redirecting you to sign in...
+								You can now sign in with your new password.
 							</p>
 						</div>
 						<div class="pt-4">
@@ -135,12 +67,13 @@
 					<Card.Description>Please create a strong password for your account.</Card.Description>
 				</Card.Header>
 				<Card.Content>
-					<form onsubmit={handleSubmit} class="space-y-4">
-						{#if generalError}
+					<form method="POST" class="space-y-4">
+						<!-- Token is passed via URL query param which form submission preserves by default if action is omitted -->
+						{#if form?.generalError}
 							<div
 								class="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
 							>
-								{generalError}
+								{form.generalError}
 							</div>
 						{/if}
 
@@ -152,99 +85,15 @@
 								/>
 								<Input
 									id="password"
-									type={showPassword ? 'text' : 'password'}
+									name="password"
+									type="password"
 									placeholder="••••••••"
-									class="pr-10 pl-10"
-									bind:value={password}
-									disabled={isLoading}
-									aria-invalid={!!errors.password}
+									class="pl-10"
+									aria-invalid={!!form?.errors?.password}
 								/>
-								<button
-									type="button"
-									class="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-									onclick={() => (showPassword = !showPassword)}
-									aria-label={showPassword ? 'Hide password' : 'Show password'}
-								>
-									{#if showPassword}
-										<EyeOff class="h-4 w-4" />
-									{:else}
-										<Eye class="h-4 w-4" />
-									{/if}
-								</button>
 							</div>
-							{#if errors.password}
-								<p class="text-sm text-destructive">{errors.password}</p>
-							{/if}
-
-							<!-- Password strength indicator -->
-							{#if password.length > 0}
-								<div class="space-y-2">
-									<div class="flex gap-1">
-										{#each Array(4) as _, i}
-											<div
-												class="h-1 flex-1 rounded-full transition-colors {i < passwordStrength
-													? passwordStrength <= 1
-														? 'bg-destructive'
-														: passwordStrength <= 2
-															? 'bg-orange-500'
-															: passwordStrength <= 3
-																? 'bg-yellow-500'
-																: 'bg-green-500'
-													: 'bg-muted'}"
-											></div>
-										{/each}
-									</div>
-									<div class="grid grid-cols-2 gap-1 text-xs">
-										<div
-											class="flex items-center gap-1 {passwordChecks.minLength
-												? 'text-green-500'
-												: 'text-muted-foreground'}"
-										>
-											{#if passwordChecks.minLength}
-												<Check class="h-3 w-3" />
-											{:else}
-												<X class="h-3 w-3" />
-											{/if}
-											8+ characters
-										</div>
-										<div
-											class="flex items-center gap-1 {passwordChecks.hasLower
-												? 'text-green-500'
-												: 'text-muted-foreground'}"
-										>
-											{#if passwordChecks.hasLower}
-												<Check class="h-3 w-3" />
-											{:else}
-												<X class="h-3 w-3" />
-											{/if}
-											Lowercase
-										</div>
-										<div
-											class="flex items-center gap-1 {passwordChecks.hasUpper
-												? 'text-green-500'
-												: 'text-muted-foreground'}"
-										>
-											{#if passwordChecks.hasUpper}
-												<Check class="h-3 w-3" />
-											{:else}
-												<X class="h-3 w-3" />
-											{/if}
-											Uppercase
-										</div>
-										<div
-											class="flex items-center gap-1 {passwordChecks.hasNumber
-												? 'text-green-500'
-												: 'text-muted-foreground'}"
-										>
-											{#if passwordChecks.hasNumber}
-												<Check class="h-3 w-3" />
-											{:else}
-												<X class="h-3 w-3" />
-											{/if}
-											Number
-										</div>
-									</div>
-								</div>
+							{#if form?.errors?.password}
+								<p class="text-sm text-destructive">{form.errors.password}</p>
 							{/if}
 						</div>
 
@@ -256,39 +105,21 @@
 								/>
 								<Input
 									id="confirmPassword"
-									type={showConfirmPassword ? 'text' : 'password'}
+									name="confirmPassword"
+									type="password"
 									placeholder="••••••••"
-									class="pr-10 pl-10"
-									bind:value={confirmPassword}
-									disabled={isLoading}
-									aria-invalid={!!errors.confirmPassword}
+									class="pl-10"
+									aria-invalid={!!form?.errors?.confirmPassword}
 								/>
-								<button
-									type="button"
-									class="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-									onclick={() => (showConfirmPassword = !showConfirmPassword)}
-									aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-								>
-									{#if showConfirmPassword}
-										<EyeOff class="h-4 w-4" />
-									{:else}
-										<Eye class="h-4 w-4" />
-									{/if}
-								</button>
 							</div>
-							{#if errors.confirmPassword}
-								<p class="text-sm text-destructive">{errors.confirmPassword}</p>
+							{#if form?.errors?.confirmPassword}
+								<p class="text-sm text-destructive">{form.errors.confirmPassword}</p>
 							{/if}
 						</div>
 
-						<Button type="submit" class="w-full" disabled={isLoading}>
-							{#if isLoading}
-								<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-								Resetting Password...
-							{:else}
-								Reset Password
-								<ArrowRight class="ml-2 h-4 w-4" />
-							{/if}
+						<Button type="submit" class="w-full">
+							Reset Password
+							<ArrowRight class="ml-2 h-4 w-4" />
 						</Button>
 					</form>
 				</Card.Content>

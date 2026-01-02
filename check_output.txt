@@ -1,0 +1,130 @@
+Loading svelte-check in workspace: e:\blog
+Getting Svelte diagnostics...
+
+e:\blog\[32msrc\routes\auth\forgot-password\+page.server.ts[39m:17:9
+[31mError[39m: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ email?: string[] | undefined; }'.
+  No index signature with a parameter of type 'string' was found on type '{ email?: string[] | undefined; }'. 
+[36m			for (const key in flattened) {
+				if ([35mflattened[key][36m?.[0]) {
+					errors[key as string] = flattened[key]![0];[39m
+
+e:\blog\[32msrc\routes\auth\forgot-password\+page.server.ts[39m:18:30
+[31mError[39m: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ email?: string[] | undefined; }'.
+  No index signature with a parameter of type 'string' was found on type '{ email?: string[] | undefined; }'. 
+[36m				if (flattened[key]?.[0]) {
+					errors[key as string] = [35mflattened[key][36m![0];
+				}[39m
+
+e:\blog\[32msrc\routes\auth\forgot-password\+page.server.ts[39m:28:19
+[31mError[39m: Property 'forgetPassword' does not exist on type 'InferAPI<{ readonly ok: StrictEndpoint<"/ok", { method: "GET"; metadata: { openapi: { description: string; responses: { "200": { description: string; content: { "application/json": { schema: { type: "object"; properties: { ok: { type: string; description: string; }; }; required: string[]; }; }; }; }; }; }; scope: "s...'. Did you mean 'resetPassword'? 
+[36m		try {
+			await auth.api.[35mforgetPassword[36m({
+				body: {[39m
+
+e:\blog\[32msrc\routes\auth\reset-password\+page.server.ts[39m:31:9
+[31mError[39m: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ password?: string[] | undefined; confirmPassword?: string[] | undefined; }'.
+  No index signature with a parameter of type 'string' was found on type '{ password?: string[] | undefined; confirmPassword?: string[] | undefined; }'. 
+[36m			for (const key in flattened) {
+				if ([35mflattened[key][36m?.[0]) {
+					errors[key as string] = flattened[key]![0];[39m
+
+e:\blog\[32msrc\routes\auth\reset-password\+page.server.ts[39m:32:30
+[31mError[39m: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ password?: string[] | undefined; confirmPassword?: string[] | undefined; }'.
+  No index signature with a parameter of type 'string' was found on type '{ password?: string[] | undefined; confirmPassword?: string[] | undefined; }'. 
+[36m				if (flattened[key]?.[0]) {
+					errors[key as string] = [35mflattened[key][36m![0];
+				}[39m
+
+e:\blog\[32msrc\routes\auth\reset-password\+page.server.ts[39m:49:13
+[31mError[39m: Property 'error' does not exist on type '{ status: boolean; }'. 
+[36m
+			if (res?.[35merror[36m) {
+				return fail(400, {[39m
+
+e:\blog\[32msrc\routes\auth\reset-password\+page.server.ts[39m:51:24
+[31mError[39m: Property 'error' does not exist on type '{ status: boolean; }'. 
+[36m				return fail(400, {
+					generalError: res.[35merror[36m.message || 'Failed to reset password'
+				});[39m
+
+e:\blog\[32msrc\routes\auth\sign-in\+page.server.ts[39m:19:9
+[31mError[39m: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ email?: string[] | undefined; password?: string[] | undefined; }'.
+  No index signature with a parameter of type 'string' was found on type '{ email?: string[] | undefined; password?: string[] | undefined; }'. 
+[36m			for (const key in flattened) {
+				if ([35mflattened[key][36m?.[0]) {
+					errors[key as string] = flattened[key]![0];[39m
+
+e:\blog\[32msrc\routes\auth\sign-in\+page.server.ts[39m:20:30
+[31mError[39m: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ email?: string[] | undefined; password?: string[] | undefined; }'.
+  No index signature with a parameter of type 'string' was found on type '{ email?: string[] | undefined; password?: string[] | undefined; }'. 
+[36m				if (flattened[key]?.[0]) {
+					errors[key as string] = [35mflattened[key][36m![0];
+				}[39m
+
+e:\blog\[32msrc\routes\auth\sign-in\+page.server.ts[39m:37:13
+[31mError[39m: Property 'error' does not exist on type '{ redirect: boolean; token: string; url?: string | undefined; user: { id: string; createdAt: Date; updatedAt: Date; email: string; emailVerified: boolean; name: string; image?: string | null | undefined; } & { ...; } & { ...; }; }'. 
+[36m
+			if (res?.[35merror[36m) {
+				return fail(401, {[39m
+
+e:\blog\[32msrc\routes\auth\sign-in\+page.server.ts[39m:39:24
+[31mError[39m: Property 'error' does not exist on type '{ redirect: boolean; token: string; url?: string | undefined; user: { id: string; createdAt: Date; updatedAt: Date; email: string; emailVerified: boolean; name: string; image?: string | null | undefined; } & { ...; } & { ...; }; }'. 
+[36m				return fail(401, {
+					generalError: res.[35merror[36m.message || 'Invalid email or password',
+					fields: { email }[39m
+
+e:\blog\[32msrc\routes\auth\sign-up\+page.server.ts[39m:27:9
+[31mError[39m: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ name?: string[] | undefined; email?: string[] | undefined; password?: string[] | undefined; confirmPassword?: string[] | undefined; terms?: string[] | undefined; }'.
+  No index signature with a parameter of type 'string' was found on type '{ name?: string[] | undefined; email?: string[] | undefined; password?: string[] | undefined; confirmPassword?: string[] | undefined; terms?: string[] | undefined; }'. 
+[36m			for (const key in flattened) {
+				if ([35mflattened[key][36m?.[0]) {
+					errors[key as string] = flattened[key]![0];[39m
+
+e:\blog\[32msrc\routes\auth\sign-up\+page.server.ts[39m:28:30
+[31mError[39m: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ name?: string[] | undefined; email?: string[] | undefined; password?: string[] | undefined; confirmPassword?: string[] | undefined; terms?: string[] | undefined; }'.
+  No index signature with a parameter of type 'string' was found on type '{ name?: string[] | undefined; email?: string[] | undefined; password?: string[] | undefined; confirmPassword?: string[] | undefined; terms?: string[] | undefined; }'. 
+[36m				if (flattened[key]?.[0]) {
+					errors[key as string] = [35mflattened[key][36m![0];
+				}[39m
+
+e:\blog\[32msrc\routes\auth\sign-up\+page.server.ts[39m:46:13
+[31mError[39m: Property 'error' does not exist on type '{ token: null; user: { id: string; createdAt: Date; updatedAt: Date; email: string; emailVerified: boolean; name: string; image?: string | null | undefined; } & { id: string; createdAt: Date; ... 8 more ...; banExpires?: Date | ... 1 more ... | undefined; } & { ...; }; } | { ...; }'.
+  Property 'error' does not exist on type '{ token: null; user: { id: string; createdAt: Date; updatedAt: Date; email: string; emailVerified: boolean; name: string; image?: string | null | undefined; } & { id: string; createdAt: Date; ... 8 more ...; banExpires?: Date | ... 1 more ... | undefined; } & { ...; }; }'. 
+[36m
+			if (res?.[35merror[36m) {
+				return fail(400, {[39m
+
+e:\blog\[32msrc\routes\auth\sign-up\+page.server.ts[39m:48:24
+[31mError[39m: Property 'error' does not exist on type '{ token: null; user: { id: string; createdAt: Date; updatedAt: Date; email: string; emailVerified: boolean; name: string; image?: string | null | undefined; } & { id: string; createdAt: Date; ... 8 more ...; banExpires?: Date | ... 1 more ... | undefined; } & { ...; }; } | { ...; }'.
+  Property 'error' does not exist on type '{ token: null; user: { id: string; createdAt: Date; updatedAt: Date; email: string; emailVerified: boolean; name: string; image?: string | null | undefined; } & { id: string; createdAt: Date; ... 8 more ...; banExpires?: Date | ... 1 more ... | undefined; } & { ...; }; }'. 
+[36m				return fail(400, {
+					generalError: res.[35merror[36m.message || 'Failed to create account',
+					fields: { name, email }[39m
+
+e:\blog\[32msrc\routes\auth\verify-email\+page.server.ts[39m:18:12
+[31mError[39m: Property 'error' does not exist on type '{ status: boolean; }'. 
+[36m
+		if (res?.[35merror[36m) {
+			return { status: 'error', message: res.error.message || 'Verification failed' };[39m
+
+e:\blog\[32msrc\routes\auth\verify-email\+page.server.ts[39m:19:43
+[31mError[39m: Property 'error' does not exist on type '{ status: boolean; }'. 
+[36m		if (res?.error) {
+			return { status: 'error', message: res.[35merror[36m.message || 'Verification failed' };
+		}[39m
+
+e:\blog\[32msrc\routes\auth\verify-2fa\+page.svelte[39m:91:23
+[31mError[39m: Property 'backupCode' does not exist on type '{ error: any; }'. (ts)
+[36m									class="pl-10 font-mono"
+									value={form?.[35mbackupCode[36m ?? ''}
+								/>[39m
+
+e:\blog\[32msrc\routes\auth\verify-2fa\+page.svelte[39m:114:23
+[31mError[39m: Property 'code' does not exist on type '{ error: any; }'. (ts)
+[36m									maxlength={6}
+									value={form?.[35mcode[36m ?? ''}
+								/>[39m
+
+====================================
+[31msvelte-check found 19 errors and 0 warnings in 6 files
+[39m
