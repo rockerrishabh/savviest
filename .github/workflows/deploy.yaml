@@ -1,0 +1,61 @@
+name: Deploy SvelteKit to Nginx
+
+on:
+  push:
+    branches:
+      - main # Change to your default branch if different
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22' # Adjust to your Node version
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build SvelteKit site
+        run: npm run build
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to server via rsync
+        run: |
+          rsync -avz --delete \
+            --exclude 'node_modules' \
+            --exclude '.git' \
+            build/ ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }}:${{ secrets.REMOTE_TARGET }}
+
+      - name: Set permissions and restart Nginx
+        run: |
+          ssh ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} << 'EOF'
+            sudo chown -R www-data:www-data ${{ secrets.REMOTE_TARGET }}
+            sudo chmod -R 755 ${{ secrets.REMOTE_TARGET }}
+            sudo nginx -t && sudo systemctl reload nginx
+          EOF
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/id_rsa
+
+      - name: Notify deployment success
+        if: success()
+        run: echo "✅ Deployment successful!"
+
+      - name: Notify deployment failure
+        if: failure()
+        run: echo "❌ Deployment failed!"
