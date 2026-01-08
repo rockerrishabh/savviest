@@ -31,7 +31,22 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
+
+          # Validate that REMOTE_HOST is set
+          if [ -z "${{ secrets.REMOTE_HOST }}" ]; then
+            echo "❌ Error: REMOTE_HOST secret is not set!"
+            exit 1
+          fi
+
+          # Run ssh-keyscan with timeout and verbose output
+          echo "Scanning SSH host: ${{ secrets.REMOTE_HOST }}"
+          ssh-keyscan -T 30 -H ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts 2>&1 || {
+            echo "❌ ssh-keyscan failed. Possible causes:"
+            echo "   - Host is unreachable or firewall is blocking port 22"
+            echo "   - Invalid hostname/IP address"
+            echo "   - DNS resolution failure"
+            exit 1
+          }
 
       - name: Deploy to server via rsync
         run: |
